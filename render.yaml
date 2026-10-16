@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: tideline
+    runtime: node
+    plan: free
+    branch: main
+    buildCommand: npm ci && npm run build
+    startCommand: node scripts/serve.mjs
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: CHAT_PROVIDER_URL
+        value: https://api.deepseek.com/v1/chat/completions
+      - key: CHAT_MODEL
+        value: deepseek-chat
+      - key: CHAT_API_KEY
+        sync: false
