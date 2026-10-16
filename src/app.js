@@ -6,6 +6,11 @@ const $=id=>document.getElementById(id);
 let scene='sunset',mood='',world=null,sending=false,mode='offline',conversation=[],breathTimer=null,toastTimer=null;
 const toast=message=>{clearTimeout(toastTimer);$('toast').textContent=message;$('toast').hidden=false;toastTimer=setTimeout(()=>$('toast').hidden=true,4200);};
 const stored=(()=>{try{return JSON.parse(localStorage.getItem('tideline-audio'))||{};}catch{return {};}})();
+const modelKey='tideline-model';
+const loadModel=()=>{try{const v=localStorage.getItem(modelKey);return v?JSON.parse(v):null;}catch{return null;}};
+const modelReady=c=>!!(c&&c.url&&c.key&&c.model);
+let modelConfig=loadModel();
+const chatConfig=()=>modelReady(modelConfig)?modelConfig:null;
 const values={waves:55,wind:25,master:65};for(const key of Object.keys(values))if(Number.isFinite(stored[key]))values[key]=Math.max(0,Math.min(100,stored[key]));
 const audio=new CoastAudio(values);
 for(const type of ['waves','wind','master']){const input=$(type+'-volume');input.value=values[type];$(type+'-value').value=values[type]+'%';input.style.setProperty('--value',values[type]+'%');input.addEventListener('input',()=>{values[type]=+input.value;$(type+'-value').value=input.value+'%';input.style.setProperty('--value',input.value+'%');audio.update();try{localStorage.setItem('tideline-audio',JSON.stringify(values));}catch{}});}
@@ -18,7 +23,8 @@ const changeScene=value=>{scene=value;document.body.classList.toggle('night',val
 $('sunset').onclick=()=>changeScene('sunset');$('moonlight').onclick=()=>changeScene('moonlight');
 const moodNotes={平静:'就这样，和这份安静待一会儿。',开心:'把这一点小小的光，也留给自己。',低落:'今天的心情，可以在这里歇一歇。',焦虑:'先不用赶路，我们慢慢来。',说不清:'暂时没有名字的感受，也值得被照顾。'};
 $('moods').querySelectorAll('button').forEach(button=>button.onclick=()=>{mood=button.dataset.mood;$('moods').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));toast(moodNotes[mood]);});
-for(const [button,dialog] of [['guide-toggle','guide-dialog'],['settings-toggle','settings-dialog'],['bottle-open','bottle-dialog']])$(button).onclick=()=>{$(dialog).showModal();if(dialog==='settings-dialog')checkConnection();};
+for(const [button,dialog] of [['guide-toggle','guide-dialog'],['settings-toggle','settings-dialog'],['bottle-open','bottle-dialog']])$(button).onclick=()=>{$(dialog).showModal();if(dialog==='settings-dialog'){fillModelForm();checkConnection();}};
+function fillModelForm(){const c=loadModel()||{};$('cfg-url').value=c.url||'';$('cfg-key').value=c.key||'';$('cfg-model').value=c.model||'';}
 function close(id){if($(id).tagName==='DIALOG')$(id).close();else $(id).hidden=true;if(id==='chat-panel')world?.setSitting(false);}
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>close(b.dataset.close));
 document.querySelectorAll('dialog').forEach(dialog=>dialog.addEventListener('click',e=>{if(e.target!==dialog)return;const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close();}));
@@ -34,9 +40,11 @@ async function send(text){if(sending||!text.trim())return;sending=true;const use
 }
 $('chat-form').onsubmit=e=>{e.preventDefault();send($('chat-input').value);};
 $('chat-suggestions').querySelectorAll('button').forEach(b=>b.onclick=()=>send(b.textContent));
-function updateChatStatus(){$('chat-status').textContent=mode==='model'?'模型已配置 · 此刻在你身边':'离线陪伴 · 此刻在你身边';}
-async function checkConnection(){const button=$('check-connection');button.disabled=true;$('connection-result').textContent='正在读取连接状态…';try{const response=await fetch('/api/status',{signal:AbortSignal.timeout(8000)});if(!response.ok)throw new Error();const result=await response.json();mode=result.mode;updateChatStatus();$('connection-title').textContent=result.configured?'模型服务已配置':'离线陪伴已就绪';$('connection-description').textContent=result.configured?'发送一条聊天消息，即可验证模型实际回应。':'精选对话，随时可以开始聊天。';$('connection-result').textContent=result.configured?'服务端配置已就绪。':'当前使用离线陪伴；配置服务端变量后即可启用模型。';}catch{$('connection-result').textContent='暂时无法读取服务状态，请稍后重试。';}finally{button.disabled=false;}}
+function updateChatStatus(){$('chat-status').textContent=mode==='model'?'模型已连接 · 此刻在你身边':'离线陪伴 · 此刻在你身边';}
+async function checkConnection(){const button=$('check-connection');button.disabled=true;$('connection-result').textContent='正在读取连接状态…';const local=modelReady(modelConfig);try{const response=await fetch('/api/status',{signal:AbortSignal.timeout(8000)});if(!response.ok)throw new Error();const result=await response.json();mode=result.mode;if(local)mode='model';updateChatStatus();$('connection-title').textContent=(result.configured||local)?'模型已连接':'离线陪伴已就绪';$('connection-description').textContent=(result.configured||local)?'发送一条聊天消息，即可验证模型实际回应。':'精选对话，随时可以开始聊天。';$('connection-result').textContent=local?'已连接你本机保存的模型配置，聊天将使用你填写的模型。':result.configured?'服务端配置已就绪。':'当前使用离线陪伴；你也可以在下方填写自己的模型。';}catch{$('connection-result').textContent='暂时无法读取服务状态，请稍后重试。';}finally{button.disabled=false;}}
 $('check-connection').onclick=checkConnection;checkConnection();
+$('cfg-save').onclick=()=>{const url=$('cfg-url').value.trim(),key=$('cfg-key').value.trim(),model=$('cfg-model').value.trim();if(!/^https:\/\//i.test(url)){$('cfg-result').textContent='API 地址需以 https:// 开头（OpenAI 兼容的 /chat/completions 接口）。';return;}$('cfg-result').textContent='已保存，下一次聊天将使用你的模型。';try{localStorage.setItem(modelKey,JSON.stringify({url,key,model}));}catch{}$('cfg-result').textContent='已保存本机模型配置。';modelConfig={url,key,model};checkConnection();};
+$('cfg-clear').onclick=()=>{localStorage.removeItem(modelKey);modelConfig=null;$('cfg-url').value='';$('cfg-key').value='';$('cfg-model').value='';$('cfg-result').textContent='已清除本机模型配置。';checkConnection();};
 $('bottle-form').onsubmit=e=>{e.preventDefault();if(!$('bottle-input').value.trim())return;$('bottle-dialog').close();$('bottle-input').value='';world?.releaseBottle();toast('海已经收到。愿下一阵风，带给你一点轻盈。');};
 function setImmersive(value){document.body.classList.toggle('immersed',value);$('exit-immersive').hidden=!value;world?.setImmersive(value);$('sound-panel').hidden=true;}
 $('immersive').onclick=()=>setImmersive(true);$('exit-immersive').onclick=()=>setImmersive(false);
