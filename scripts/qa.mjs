@@ -1,0 +1,33 @@
+import { chromium } from 'playwright-core';
+import { spawn } from 'node:child_process';
+import { mkdir, writeFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import assert from 'node:assert/strict';
+const root=resolve(import.meta.dirname,'..'),out=resolve(root,'qa-output');
+await mkdir(out,{recursive:true});
+const server=spawn(process.execPath,['scripts/dev.mjs'],{cwd:root,stdio:['ignore','pipe','pipe'],windowsHide:true});
+let browser;
+try{
+  await new Promise((ok,fail)=>{const timer=setTimeout(()=>fail(new Error('Preview server timeout')),20000);server.stdout.on('data',chunk=>{if(chunk.toString().includes('Local:')){clearTimeout(timer);ok();}});server.on('exit',code=>{clearTimeout(timer);fail(new Error('Preview server exited '+code));});});
+  const readiness=await fetch('http://127.0.0.1:4173/');assert.equal(readiness.status,200);
+  browser=await chromium.launch({channel:'chrome',headless:true,args:['--enable-webgl','--ignore-gpu-blocklist','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
+  const page=await browser.newPage({viewport:{width:1440,height:900},deviceScaleFactor:1});
+  const issues=[];page.on('pageerror',e=>issues.push(e.message));page.on('console',m=>{if(m.type()==='error'&&/THREE|WebGL|shader|TypeError|ReferenceError/.test(m.text()))issues.push(m.text());});
+  await page.goto('http://127.0.0.1:4173/',{waitUntil:'domcontentloaded'});await page.waitForSelector('#loading',{state:'detached',timeout:30000});
+  assert.equal(await page.locator('canvas').count(),1);assert.equal(await page.locator('.fallback-message').count(),0);
+  await page.screenshot({path:resolve(out,'sunset-desktop.png')});
+  await page.locator('#moods button[data-mood="低落"]').click();assert.equal(await page.locator('#moods button[data-mood="低落"]').getAttribute('aria-pressed'),'true');
+  await page.locator('#chat-open').click();await page.locator('#chat-input').fill('今天有一点累');await page.locator('#chat-input').press('Enter');await page.waitForFunction(()=>document.querySelectorAll('.message.assistant').length===2);assert.match(await page.locator('#messages').textContent(),/力气/);assert.match(await page.locator('.message-source').last().textContent(),/离线陪伴/);
+  await page.screenshot({path:resolve(out,'chat-desktop.png')});await page.locator('[data-close="chat-panel"]').click();
+  await page.locator('#moonlight').click();await page.waitForTimeout(2500);assert.equal(await page.locator('body.night').count(),1);assert.equal(await page.locator('h1').evaluate(el=>getComputedStyle(el).color),'rgb(224, 228, 219)');await page.screenshot({path:resolve(out,'moonlight-desktop.png')});
+  await page.locator('#sound-toggle').click();await page.locator('#audio-start').click();assert.equal(await page.locator('body.sound-on').count(),1);await page.locator('#waves-volume').fill('35');assert.equal(await page.locator('#waves-value').textContent(),'35%');await page.locator('#audio-start').click();assert.equal(await page.locator('body.sound-on').count(),0);await page.locator('[data-close="sound-panel"]').click();
+  await page.locator('#settings-toggle').click();await page.waitForFunction(()=>document.querySelector('#connection-title').textContent==='离线陪伴已就绪');await page.locator('[data-close="settings-dialog"]').click();
+  await page.locator('#bottle-open').click();await page.locator('#bottle-input').fill('把今天的疲惫放在这里');await page.locator('#bottle-form button[type="submit"]').click();assert.equal(await page.locator('#bottle-input').inputValue(),'');
+  await page.locator('#breathe-open').click();assert.equal(await page.locator('#breathing').isVisible(),true);await page.waitForTimeout(4500);assert.match(await page.locator('#breath-text').textContent(),/停留/);await page.locator('#breathe-close').click();
+  await page.locator('#immersive').click();assert.equal(await page.locator('#exit-immersive').isVisible(),true);await page.keyboard.press('Escape');assert.equal(await page.locator('#exit-immersive').isVisible(),false);
+  await page.locator('#sunset').click();await page.keyboard.down('w');await page.waitForTimeout(500);await page.keyboard.up('w');
+  await page.setViewportSize({width:390,height:844});await page.waitForTimeout(2000);await page.screenshot({path:resolve(out,'sunset-mobile.png')});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+  await page.locator('#chat-open').click();await page.locator('#chat-input').fill('陪我看看海吧');await page.locator('#send-message').click();await page.waitForFunction(()=>document.querySelectorAll('.message.assistant').length===3);await page.screenshot({path:resolve(out,'chat-mobile.png')});
+  assert.deepEqual(issues,[]);await writeFile(resolve(out,'result.json'),JSON.stringify({passed:true,checks:['WebGL rendering without shader errors','desktop and mobile layouts','scene switching','mood selection','offline chat','audio controls','API configuration state','bottle release','breathing phases','immersive mode'],issues},null,2));
+  console.log('Browser checks passed. Screenshots: '+out);
+}finally{await browser?.close();server.kill();}
