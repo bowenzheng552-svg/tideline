@@ -35,10 +35,13 @@ export async function handleApi(request,env={}){
   const messages=data.messages.map(m=>({role:m.role,content:m.content.trim()}));
   if(messages.at(-1).role!=='user')return json({error:'最后一条消息应来自用户。'},400);
   const mood=MOODS.includes(data.mood)?data.mood:'说不清';const scene=data.scene==='moonlight'?'月光沙滩':'日落海滩';
-  if(!configured(env))return json({reply:offlineReply(messages.at(-1).content,mood,messages.filter(m=>m.role==='user').length-1),mode:'offline'});
+  const reqConfig=data.config&&typeof data.config==='object'?data.config:null;
+  const eff={...env};
+  if(reqConfig){if(typeof reqConfig.url==='string'&&reqConfig.url.trim())eff.CHAT_PROVIDER_URL=reqConfig.url.trim();if(typeof reqConfig.key==='string'&&reqConfig.key.trim())eff.CHAT_API_KEY=reqConfig.key.trim();if(typeof reqConfig.model==='string'&&reqConfig.model.trim())eff.CHAT_MODEL=reqConfig.model.trim();}
+  if(!configured(eff))return json({reply:offlineReply(messages.at(-1).content,mood,messages.filter(m=>m.role==='user').length-1),mode:'offline'});
   try{
-    const provider=new URL(env.CHAT_PROVIDER_URL);if(provider.protocol!=='https:')throw new Error('CONFIG');
-    const response=await fetch(provider,{method:'POST',headers:{'Authorization':`Bearer ${env.CHAT_API_KEY}`,'Content-Type':'application/json'},body:JSON.stringify({model:env.CHAT_MODEL,messages:[{role:'system',content:systemPrompt+`\n当前场景：${scene}。用户自选心情：${mood}。心情标签仅供参考，不要据此下结论。`},...messages],temperature:.8,stream:false}),signal:AbortSignal.timeout(20000),redirect:'error'});
+    const provider=new URL(eff.CHAT_PROVIDER_URL);if(provider.protocol!=='https:')throw new Error('CONFIG');
+    const response=await fetch(provider,{method:'POST',headers:{'Authorization':`Bearer ${eff.CHAT_API_KEY}`,'Content-Type':'application/json'},body:JSON.stringify({model:eff.CHAT_MODEL,messages:[{role:'system',content:systemPrompt+`\n当前场景：${scene}。用户自选心情：${mood}。心情标签仅供参考，不要据此下结论。`},...messages],temperature:.8,stream:false}),signal:AbortSignal.timeout(20000),redirect:'error'});
     if(!response.ok)return json({error:'海边的信号暂时有些弱，模型服务未能回应。请稍后重试。',code:'PROVIDER_ERROR'},502);
     const result=await response.json();let reply=result.reply??result.choices?.[0]?.message?.content;
     if(typeof reply!=='string'||!reply.trim())throw new Error('EMPTY_REPLY');
