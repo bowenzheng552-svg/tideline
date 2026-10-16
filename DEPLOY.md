@@ -22,6 +22,16 @@
    - `CHAT_API_KEY=你的 DeepSeek 密钥`（标记为 secret）
 4. 部署完成后，Render 给出一个 `https://tideline.onrender.com` 公网地址。
 
+## 网页内直接连接你的大模型（无需改服务端配置）
+
+部署后，访客打开页面右上角齿轮「模型连接设置」，在「连接你的大模型」里填写：
+
+- API 地址：OpenAI 兼容的 `/chat/completions` 接口，例如 `https://api.deepseek.com/v1/chat/completions`
+- API Key：你的服务商密钥
+- 模型名：例如 `deepseek-chat`
+
+保存后，每次聊天会把这份配置随请求发给服务端代为调用，密钥只保存在本机浏览器、只在调用时发送，不进前端代码。服务端 `worker/api.js` 会以请求里的配置覆盖环境变量（两者任一齐备即为在线陪伴）。这样即使服务端环境变量没填，也能在页面里直接接上模型。
+
 ## 本地试玩（不受影响）
 
 仍用 `node scripts/play.mjs`，访问 http://127.0.0.1:4173 。
