@@ -5,6 +5,7 @@
   "description": "A healing interactive seaside experience.",
   "scripts": {
     "start": "node server.js",
+    "build": "node --check app.js && node --check ambient.js && node --check bottles.js && node --check music.js && node --check server.js",
     "check": "node --check app.js && node --check ambient.js && node --check bottles.js && node --check music.js && node --check server.js"
   },
   "engines": {
