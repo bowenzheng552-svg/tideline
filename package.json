@@ -1,23 +1,13 @@
 {
-  "name": "tideline",
+  "name": "between-the-tides",
+  "version": "1.0.0",
   "private": true,
-  "type": "module",
+  "description": "A healing interactive seaside experience.",
   "scripts": {
-    "start": "node scripts/serve.mjs",
-    "dev": "node scripts/dev.mjs",
-    "build": "node scripts/build.mjs",
-    "validate": "node scripts/validate-artifact.mjs",
-    "test": "node --test tests/api.test.mjs",
-    "play": "node scripts/play.mjs"
+    "start": "node server.js",
+    "check": "node --check app.js && node --check ambient.js && node --check bottles.js && node --check music.js && node --check server.js"
   },
   "engines": {
-    "node": ">=22"
-  },
-  "dependencies": {
-    "three": "0.180.0"
-  },
-  "devDependencies": {
-    "esbuild": "0.25.10",
-    "playwright-core": "^1.56.1"
+    "node": ">=20"
   }
 }

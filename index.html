@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#e1c8a7">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="一片给心事的海。在日落与月光之间，和小屿散步、聊天，听一会儿海。">
+  <title>潮汐之间 · 一片给心事的海</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='20' fill='%23e8decb'/%3E%3Cpath d='M10 36Q21 23 32 36T54 36M10 45Q21 32 32 45T54 45' stroke='%23596859' fill='none' stroke-width='3'/%3E%3Ccircle cx='32' cy='20' r='6' fill='%23b58c5e'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div id="world" role="application" aria-label="可漫步的三维海滩。使用 WASD 或方向键移动，拖动场景环顾，点击沙滩前往。"></div>
+  <div class="vignette"></div><div class="grain"></div>
+  <div id="loading"><span class="loading-sun"></span><p>海风正在来的路上</p><small>给自己，留一小段空白。</small></div>
+  <div id="ui">
+    <header>
+      <a class="brand" href="/" aria-label="潮汐之间首页"><svg viewBox="0 0 40 40" fill="none"><circle cx="20" cy="10" r="4"/><path d="M3 23Q11 14 20 23T37 23M3 31Q11 22 20 31T37 31"/></svg><span>潮汐之间<small>BETWEEN THE TIDES</small></span></a>
+      <div class="scene-switch" role="group" aria-label="选择海滩时刻"><button id="sunset" class="selected" aria-pressed="true"><i data-icon="sun"></i><span>日落海滩</span></button><button id="moonlight" aria-pressed="false"><i data-icon="moon"></i><span>月光沙滩</span></button></div>
+      <nav><button id="sound-toggle" class="round-button" aria-label="环境声音设置" title="环境声音"><i data-icon="volume"></i><span class="sound-dot"></span></button><button id="guide-toggle" class="round-button" aria-label="游玩指南" title="游玩指南"><i data-icon="help"></i></button><button id="settings-toggle" class="round-button" aria-label="模型连接设置" title="模型连接"><i data-icon="settings"></i></button></nav>
+    </header>
+    <aside class="intro"><div class="eyebrow"><span></span> 一片给心事的海 <span class="chapter">01 / 无需抵达</span></div><h1>慢一点，<br>海会等你。</h1><p id="scene-poem">让今天的心事，<br>在晚风里轻轻靠岸。</p><div class="weather"><i data-icon="sun"></i><span id="weather-text">落日余温</span><b>·</b><span>海风轻柔</span></div></aside>
+    <button class="wish-shell" id="wish-shell" aria-label="拾起一枚贝壳"><i data-icon="flower"></i><span>拾起一枚贝壳</span></button>
+    <div class="location-marker" id="npc-label"><span class="marker-dot"></span><span>小屿</span><small>在这里，陪着你</small></div>
+    <div class="left-bottom"><div class="mood-title">此刻，你的心情像什么？<span>只要如实感受就好</span></div><div id="moods" role="group" aria-label="此刻心情"><button data-mood="平静" aria-pressed="false"><i data-icon="leaf"></i>平静</button><button data-mood="开心" aria-pressed="false"><i data-icon="smile"></i>开心</button><button data-mood="低落" aria-pressed="false"><i data-icon="cloud"></i>低落</button><button data-mood="焦虑" aria-pressed="false"><i data-icon="wind"></i>焦虑</button><button data-mood="说不清" aria-pressed="false"><i data-icon="dots"></i>说不清</button></div></div>
+    <div class="companion-card"><div class="mini-avatar"><span class="avatar-head"></span><span class="avatar-cape"></span></div><div><span class="companion-title">小屿 <span class="live-dot"></span><small>你的海边伙伴</small></span><p id="companion-line">今天，想和我说些什么？</p></div><button id="chat-open">坐下来，聊一会儿 <i data-icon="arrow"></i></button></div>
+    <div class="right-bottom"><button id="bottle-open"><i data-icon="bottle"></i><span>把心事交给海</span></button><button id="breathe-open"><i data-icon="flower"></i><span>跟着潮汐呼吸</span></button></div>
+    <footer><span class="key-hint"><kbd>W A S D</kbd> 漫步 <span>·</span> 拖动环顾 <span>·</span> 点击沙滩前往</span><span class="footer-quote">在这里，你可以什么都不做。</span><button id="immersive"><i data-icon="expand"></i>沉浸看海</button></footer>
+  </div>
+  <button id="exit-immersive" hidden><i data-icon="collapse"></i> 返回海岸</button>
+  <section id="sound-panel" class="popover" hidden aria-label="环境声音"><div class="panel-top"><span>听见海岸</span><button data-close="sound-panel" aria-label="关闭"><i data-icon="close"></i></button></div><p>给耳朵，也留一点空白。</p><button id="audio-start" class="audio-start"><i data-icon="play"></i><span>开启环境声音</span></button><label class="slider-label"><i data-icon="waves"></i><span>海浪</span><output id="waves-value">55%</output><input id="waves-volume" type="range" min="0" max="100" value="55" aria-label="海浪音量"></label><label class="slider-label"><i data-icon="wind"></i><span>海风</span><output id="wind-value">25%</output><input id="wind-volume" type="range" min="0" max="100" value="25" aria-label="海风音量"></label><label class="slider-label master"><i data-icon="volume"></i><span>总音量</span><output id="master-value">65%</output><input id="master-volume" type="range" min="0" max="100" value="65" aria-label="总音量"></label></section>
+  <div id="sky-events" aria-hidden="true"></div>
+  <div id="night-hint">轻点夜空，会有一颗流星路过</div>
+  <aside id="music-panel" class="music-panel" hidden aria-label="留声机">
+    <div class="music-head"><div><small>SEASIDE RADIO</small><strong>海岸留声机</strong></div><button data-close="music-panel" aria-label="关闭留声机"><i data-icon="close"></i></button></div>
+    <form id="music-search"><input id="music-query" type="search" placeholder="搜索喜欢的歌或音乐人" aria-label="搜索音乐" autocomplete="off"><button type="submit" aria-label="搜索"><i data-icon="arrow"></i></button></form>
+    <p id="music-status">找一首适合海风的歌。</p>
+    <div id="music-results"></div>
+    <audio id="music-audio" controls preload="none"></audio>
+  </aside>
+  <div id="speech-layer" aria-live="polite"></div>
+  <section id="chat-panel" class="chat-panel" hidden aria-label="与小屿聊天"><div class="chat-head"><div class="mini-avatar"><span class="avatar-head"></span><span class="avatar-cape"></span></div><div><strong>小屿</strong><small id="chat-status">离线陪伴 · 此刻在你身边</small></div><button data-close="chat-panel" aria-label="结束聊天"><i data-icon="close"></i></button></div><div class="chat-scene-note"><i data-icon="waves"></i> 你们在海边坐了下来，海浪慢慢地来。</div><div id="messages" role="log" aria-live="polite" aria-relevant="additions"></div><div id="chat-suggestions"><button>今天有一点累</button><button>陪我看看海吧</button><button>最近总是想太多</button></div><form id="chat-form"><button type="button" class="chat-dismiss" data-close="chat-panel" aria-label="结束聊天"><i data-icon="close"></i></button><textarea id="chat-input" maxlength="2000" rows="1" placeholder="轻轻说点什么…" aria-label="给小屿的消息"></textarea><button type="submit" id="send-message" aria-label="发送消息"><i data-icon="arrow-up"></i></button></form><small class="chat-footnote">不必组织好语言，每一种心情都可以。</small></section>
+  <dialog id="settings-dialog"><div class="dialog-head"><div><span class="eyebrow">A LITTLE CONNECTION</span><h2>让陪伴，更懂你</h2></div><button data-close="settings-dialog" aria-label="关闭"><i data-icon="close"></i></button></div><p>小屿已准备好离线陪伴。连接模型后，每一次回应都由你的模型生成。</p><div class="connection-status"><span class="live-dot"></span><div><strong id="connection-title">离线陪伴已就绪</strong><small id="connection-description">精选对话，随时可以开始聊天。</small></div></div><div class="settings-note"><i data-icon="lock"></i><p>模型可由服务端统一配置，也可以由每个人在下方填写自己的模型；密钥只在调用时发送给服务端，不进前端代码。</p></div>
+<div class="model-connect">
+  <h3>连接你的大模型</h3>
+  <p>不想依赖服务器配置时，直接填你自己的模型即可。信息只保存在本机浏览器，每次聊天会随请求发送给服务端代为调用。</p>
+  <label>API 地址<small>OpenAI 兼容，例如 https://api.deepseek.com/v1/chat/completions</small>
+    <input id="cfg-url" type="text" placeholder="https://your-provider/v1/chat/completions" autocomplete="off" spellcheck="false"></label>
+  <label>API Key
+    <input id="cfg-key" type="password" placeholder="sk-..." autocomplete="off"></label>
+  <label>模型名
+    <input id="cfg-model" type="text" placeholder="deepseek-chat" autocomplete="off"></label>
+  <div class="model-connect-actions"><button id="cfg-save" class="primary">保存并连接</button><button id="cfg-clear" class="ghost">清除</button></div>
+  <p id="cfg-result" role="status"></p>
+</div><details><summary>开发者接入说明 <i data-icon="chevron"></i></summary><div class="api-help"><p>在部署环境设置以下变量：</p><code>CHAT_PROVIDER_URL<br>CHAT_API_KEY<br>CHAT_MODEL</code><p>接口接收 messages、model 与 temperature 字段，支持返回 reply 或 choices[0].message.content。</p><code>POST /api/chat<br>{ messages: […], mood: "平静", scene: "sunset" }</code><p>GET /api/status 可读取连接状态。源码中的 README 包含完整接入示例。</p></div></details><button id="check-connection" class="primary full">检查连接 <i data-icon="refresh"></i></button><p id="connection-result" role="status"></p></dialog>
+  <dialog id="guide-dialog"><div class="dialog-head"><div><span class="eyebrow">WELCOME TO YOUR SHORE</span><h2>这一刻，属于你</h2></div><button data-close="guide-dialog" aria-label="关闭"><i data-icon="close"></i></button></div><p>一小片可以自由漫步的海岸。没有任务，也无需赶路。</p><div class="guide-list"><div><i data-icon="footsteps"></i><span><strong>沿着海岸，走一走</strong><small>WASD / 方向键移动，拖动环顾；手机上点击沙滩即可前往。</small></span></div><div><i data-icon="chat"></i><span><strong>和小屿，聊一聊</strong><small>点击「坐下来，聊一会儿」，把想说的话留在晚风里。</small></span></div><div><i data-icon="bottle"></i><span><strong>让心事，轻一点</strong><small>写下一句心事交给海，或跟着潮汐完成一轮呼吸。</small></span></div><div><i data-icon="volume"></i><span><strong>听听海，看看月亮</strong><small>点击顶部切换时刻，开启海浪与海风，找到舒服的音量。</small></span></div></div><p class="privacy-note">聊天仅保留在本次页面会话；声音偏好保存在本机。连接模型时，聊天内容会发送至配置的服务商。</p><button class="primary full" data-close="guide-dialog">好，就在这里待一会儿 <i data-icon="arrow"></i></button></dialog>
+  <dialog id="bottle-dialog" class="bottle-dialog">
+    <div class="dialog-head"><div><span class="eyebrow">MESSAGES FROM THE TIDE</span><h2>海上漂流瓶</h2></div><button data-close="bottle-dialog" aria-label="关闭漂流瓶"><i data-icon="close"></i></button></div>
+    <div class="bottle-tabs"><button id="bottle-receive-tab" class="selected">收到一只</button><button id="bottle-write-tab">写一封</button></div>
+    <section id="bottle-receive-view">
+      <p id="bottle-receive-status">正在等潮水送来一只瓶子…</p>
+      <article id="bottle-incoming" class="bottle-incoming" hidden><small id="bottle-from"></small><p id="bottle-message-text"></p><div id="bottle-replies"></div></article>
+      <button id="bottle-next" class="ghost bottle-next" hidden>再听一只 <i data-icon="waves"></i></button>
+      <form id="bottle-reply-form" hidden><textarea id="bottle-reply-input" maxlength="500" required placeholder="把回信放进这只瓶子…" aria-label="回信"></textarea><button class="primary" type="submit">让回信漂回去 <i data-icon="arrow"></i></button></form>
+    </section>
+    <section id="bottle-write-view" hidden>
+      <p>写下这一刻，让海替你保管。海岸上的其他旅人也许会收到它。</p>
+      <form id="bottle-form"><textarea id="bottle-input" maxlength="500" placeholder="此刻，想放下些什么…" required aria-label="写下想放下的心事"></textarea><div class="bottle-bottom"><small>不署名也可以，只把心事交给海。</small><button class="primary" type="submit">放入大海 <i data-icon="arrow"></i></button></div></form>
+    </section>
+  </dialog>
+  <div id="breathing" hidden><button id="breathe-close" aria-label="结束呼吸练习"><i data-icon="close"></i></button><span class="eyebrow">和海浪一起，慢下来</span><div class="breath-orbit"><div class="breath-circle"><span id="breath-text">准备好了吗</span><small id="breath-count">让肩膀放松</small></div></div><p id="breath-note">吸气 4 秒 · 停留 2 秒 · 呼气 6 秒</p><span id="breath-round">一小段呼吸的时间，只留给自己。</span></div>
+  <div id="toast" role="status" hidden></div>
+  <script src="/bottles.js"></script>
+  <script src="/ambient.js"></script>
+  <script src="/music.js"></script>
+  <script type="module" src="/app.js"></script>
+</body></html>
