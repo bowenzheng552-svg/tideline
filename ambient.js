@@ -48,3 +48,31 @@ wishShell.addEventListener("click", () => {
     toast.hidden = true;
   }, 5200);
 });
+
+
+// Keep mobile chat controls above the virtual keyboard without resizing the 3D scene.
+const mobileChatInput = document.getElementById("chat-input");
+let viewportFrame = 0;
+function syncVisibleViewport() {
+  cancelAnimationFrame(viewportFrame);
+  viewportFrame = requestAnimationFrame(() => {
+    const viewport = window.visualViewport;
+    const gap = viewport ? Math.max(0, innerHeight - viewport.height - viewport.offsetTop) : 0;
+    document.documentElement.style.setProperty("--keyboard-gap", `${gap}px`);
+    document.documentElement.style.setProperty("--visible-height", `${viewport?.height || innerHeight}px`);
+  });
+}
+if (window.visualViewport) {
+  window.visualViewport.addEventListener("resize", syncVisibleViewport);
+  window.visualViewport.addEventListener("scroll", syncVisibleViewport);
+}
+mobileChatInput?.addEventListener("focus", () => {
+  document.body.classList.add("typing-mobile");
+  setTimeout(syncVisibleViewport, 120);
+});
+mobileChatInput?.addEventListener("blur", () => {
+  document.body.classList.remove("typing-mobile");
+  document.documentElement.style.setProperty("--keyboard-gap", "0px");
+  setTimeout(() => window.dispatchEvent(new Event("resize")), 180);
+});
+syncVisibleViewport();

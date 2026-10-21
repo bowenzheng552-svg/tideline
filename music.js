@@ -45,6 +45,14 @@ async function searchMusic() {
       button.append(copy, play);
       button.addEventListener("click", async () => {
         musicAudio.src = item.preview;
+        if ("mediaSession" in navigator && "MediaMetadata" in window) {
+          navigator.mediaSession.metadata = new MediaMetadata({
+            title: item.title,
+            artist: item.artist,
+            album: "海岸留声机",
+            artwork: item.cover ? [{ src: item.cover, sizes: "60x60", type: "image/jpeg" }] : [],
+          });
+        }
         musicStatus.textContent = `${item.title} · ${item.artist}`;
         try {
           await musicAudio.play();
@@ -65,6 +73,15 @@ musicSearch.addEventListener("submit", (event) => {
   event.preventDefault();
   searchMusic();
 });
-musicPanel.querySelector("[data-close]").addEventListener("click", () => {
-  musicAudio.pause();
+musicAudio.loop = true;
+musicAudio.addEventListener("play", () => {
+  if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
 });
+musicAudio.addEventListener("pause", () => {
+  if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
+});
+if ("mediaSession" in navigator) {
+  navigator.mediaSession.setActionHandler("play", () => musicAudio.play());
+  navigator.mediaSession.setActionHandler("pause", () => musicAudio.pause());
+  navigator.mediaSession.setActionHandler("stop", () => musicAudio.pause());
+}
