@@ -25,6 +25,20 @@ node server.js
 - 增加可点击的治愈贝壳和自动淡出的场景介绍。
 - 界面使用更克制的海玻璃质感、细边高光、分层阴影和更清晰的字体层级。
 - 手机端使用独立相机画幅、更小字号与手写风字体；输入框会避开软键盘且不会带动 3D 画布缩放。
+- 两个实时角色已重做为原创的圆润旅行者形象：大比例头部、柔光面罩、发光眼、层叠斗篷、围巾与星纹饰物。造型参考《光遇》的轻盈剪影语言，但不复刻现有角色。
+- 月光场景增加分层海蚀拱、拱心符文、湿沙高光、岸边泡沫、更清晰的接触阴影和更完整的远景海面补光。
+
+## 3D 资产
+
+`3d-assets/` 包含本轮 Blender 场景与可复用角色模型：
+
+- `Moonlight-Beach-SkyStyle.blend`：可编辑的完整月光海滩场景。
+- `Moonlight-Beach-SkyStyle.glb`：包含场景和两个角色的 GLB。
+- `Traveler-A-SkyStyle.glb`、`Traveler-B-SkyStyle.glb`：独立角色资产。
+- `Moonlight-Beach-SkyStyle.png`、`Moonlight-Characters-SkyStyle.png`：场景与角色近景渲染。
+- `ao-bakes-final/`：12 张 384×384 环境 AO 烘焙贴图。
+
+Blender 资产使用 64 采样 Eevee 渲染。角色每个约 2.8 万顶点、5 万面，完整场景约 10 万顶点、16 万面。
 
 ## 模型连接
 
